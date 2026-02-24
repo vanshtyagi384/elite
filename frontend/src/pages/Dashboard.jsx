@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
-import { Play, ClipboardCheck, Timer, Trophy, ChevronRight } from 'lucide-react';
+import { Play, ClipboardCheck, Timer, Trophy, ChevronRight, Lock } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const Dashboard = () => {
@@ -31,7 +31,8 @@ const Dashboard = () => {
                     <h1 className="text-4xl font-bold text-white mb-2">
                         Team Dashboard
                     </h1>
-                    <p className="text-slate-400">Welcome, {user.teamName}. Good luck with your competition.</p>
+                    <p className="text-slate-400">Welcome, <span className="text-white font-bold">{user.teamName}</span></p>
+                    <p className="text-sm text-blue-400 font-mono mt-1">Participant ID: {user.username}</p>
                 </div>
                 <div className="glass-card px-6 py-4 rounded-2xl flex items-center gap-4">
                     <div className="p-3 bg-blue-500/10 rounded-xl text-blue-400">
@@ -40,7 +41,9 @@ const Dashboard = () => {
                     <div>
                         <p className="text-xs text-slate-500 uppercase font-bold tracking-wider">Current Status</p>
                         <p className="text-xl font-semibold text-white">
-                            {round1Result ? (round1Result.qualified ? 'Qualified for R2' : 'Completed R1') : 'Ready to Start'}
+                            {round1Result
+                                ? (round1Result.qualified ? 'Qualified for R2' : 'Completed R1')
+                                : 'Ready to Start'}
                         </p>
                     </div>
                 </div>

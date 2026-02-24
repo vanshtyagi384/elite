@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../utils/api';
 import { toast } from 'react-toastify';
-import { Users, PlusCircle, Trophy, Settings, List, Plus, Search, CheckCircle, XCircle } from 'lucide-react';
+import { Users, PlusCircle, Trophy, Settings, List, Plus, Search, CheckCircle, XCircle, Play } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const AdminDashboard = () => {
@@ -29,7 +29,16 @@ const AdminDashboard = () => {
 
     useEffect(() => {
         fetchData();
-    }, [round]);
+
+        // Auto-refresh leaderboard every 10 seconds if on leaderboard tab
+        let interval;
+        if (activeTab === 'leaderboard') {
+            interval = setInterval(fetchData, 10000);
+        }
+        return () => {
+            if (interval) clearInterval(interval);
+        };
+    }, [round, activeTab]);
 
     const handleAddTeam = async (e) => {
         e.preventDefault();
@@ -50,7 +59,8 @@ const AdminDashboard = () => {
             toast.success('Question added');
             setNewQuestion({ ...newQuestion, question: '', options: ['', '', '', ''], correctAnswer: '' });
         } catch (error) {
-            toast.error('Failed to add question');
+            console.error("API error adding question:", error.response?.data || error);
+            toast.error(error.response?.data?.message || 'Failed to add question');
         }
     };
 
@@ -63,6 +73,8 @@ const AdminDashboard = () => {
             toast.error('Operation failed');
         }
     };
+
+
 
     return (
         <div className="max-w-7xl mx-auto p-6 md:p-10">
@@ -148,7 +160,15 @@ const AdminDashboard = () => {
                                         <label className="text-sm text-slate-400">Round</label>
                                         <select
                                             className="w-full bg-slate-800 border-white/10 rounded-xl px-4 py-2"
-                                            value={newQuestion.round} onChange={e => setNewQuestion({ ...newQuestion, round: parseInt(e.target.value) })}
+                                            value={newQuestion.round} onChange={e => {
+                                                const r = parseInt(e.target.value);
+                                                setNewQuestion({
+                                                    ...newQuestion,
+                                                    round: r,
+                                                    marks: r === 2 ? 10 : 4,
+                                                    negativeMarks: r === 2 ? 0 : -1
+                                                });
+                                            }}
                                         >
                                             <option value={1}>Round 1 (MCQ)</option>
                                             <option value={2}>Round 2 (Problem)</option>
@@ -209,17 +229,20 @@ const AdminDashboard = () => {
 
                     {activeTab === 'leaderboard' && (
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                            <div className="flex justify-between items-center mb-8">
+                            <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-8">
                                 <h3 className="text-2xl font-bold text-white tracking-tight">Real-time Standings</h3>
-                                <div className="flex gap-2 bg-slate-900/80 p-1.5 rounded-2xl border border-white/5">
-                                    <button
-                                        onClick={() => setRound(1)}
-                                        className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${round === 1 ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
-                                    >Round 1</button>
-                                    <button
-                                        onClick={() => setRound(2)}
-                                        className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${round === 2 ? 'bg-purple-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
-                                    >Round 2</button>
+                                <div className="flex gap-4 items-center">
+
+                                    <div className="flex gap-2 bg-slate-900/80 p-1.5 rounded-2xl border border-white/5">
+                                        <button
+                                            onClick={() => setRound(1)}
+                                            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${round === 1 ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
+                                        >Round 1</button>
+                                        <button
+                                            onClick={() => setRound(2)}
+                                            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${round === 2 ? 'bg-purple-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
+                                        >Round 2</button>
+                                    </div>
                                 </div>
                             </div>
 
@@ -247,8 +270,8 @@ const AdminDashboard = () => {
                                                     onClick={() => handleQualify(res.teamId._id)}
                                                     disabled={res.qualified}
                                                     className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold transition-all ${res.qualified
-                                                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                                                            : 'bg-white/10 text-white hover:bg-emerald-600 border border-white/10'
+                                                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                                                        : 'bg-white/10 text-white hover:bg-emerald-600 border border-white/10'
                                                         }`}
                                                 >
                                                     {res.qualified ? <CheckCircle size={18} /> : null}

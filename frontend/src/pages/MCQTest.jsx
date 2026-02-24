@@ -2,8 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import { toast } from 'react-toastify';
-import { Timer, Send, ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react';
+import { Timer, Send, ChevronLeft, ChevronRight, AlertTriangle, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '../context/AuthContext';
 
 const MCQTest = () => {
     const [questions, setQuestions] = useState([]);
@@ -12,6 +13,7 @@ const MCQTest = () => {
     const [timeLeft, setTimeLeft] = useState(1800); // 30 minutes
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
+    const { user } = useAuth();
     const navigate = useNavigate();
 
     const handleSubmit = useCallback(async () => {
@@ -96,9 +98,15 @@ const MCQTest = () => {
                     </div>
                 </div>
 
-                <div className={`flex items-center gap-2 px-4 py-2 rounded-xl font-mono text-xl font-bold ${timeLeft < 300 ? 'text-red-400 animate-pulse bg-red-500/10' : 'text-emerald-400 bg-emerald-500/10'}`}>
-                    <Timer size={20} />
-                    {formatTime(timeLeft)}
+                <div className="flex items-center gap-6">
+                    <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-slate-800/50 rounded-xl border border-white/5">
+                        <User size={16} className="text-slate-400" />
+                        <span className="text-sm font-mono text-blue-400">{user?.username}</span>
+                    </div>
+                    <div className={`flex items-center gap-2 px-4 py-2 rounded-xl font-mono text-xl font-bold ${timeLeft < 300 ? 'text-red-400 animate-pulse bg-red-500/10' : 'text-emerald-400 bg-emerald-500/10'}`}>
+                        <Timer size={20} />
+                        {formatTime(timeLeft)}
+                    </div>
                 </div>
             </div>
 
@@ -120,8 +128,8 @@ const MCQTest = () => {
                                 key={idx}
                                 onClick={() => setAnswers(prev => ({ ...prev, [currentQuestion._id]: option }))}
                                 className={`w-full text-left p-4 rounded-xl border transition-all flex items-center gap-4 ${answers[currentQuestion._id] === option
-                                        ? 'bg-blue-600/20 border-blue-500 text-blue-300'
-                                        : 'bg-slate-800/30 border-white/10 text-slate-400 hover:border-white/30'
+                                    ? 'bg-blue-600/20 border-blue-500 text-blue-300'
+                                    : 'bg-slate-800/30 border-white/10 text-slate-400 hover:border-white/30'
                                     }`}
                             >
                                 <span className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold border ${answers[currentQuestion._id] === option ? 'bg-blue-500 border-blue-400 text-white' : 'bg-slate-700/50 border-white/10'

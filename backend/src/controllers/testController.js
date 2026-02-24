@@ -11,7 +11,8 @@ exports.addQuestion = async (req, res) => {
         });
         res.status(201).json(newQuestion);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error("Error adding question:", error);
+        res.status(500).json({ message: error.message, stack: error.stack });
     }
 };
 
@@ -21,10 +22,11 @@ exports.getQuestions = async (req, res) => {
         const { round } = req.params;
 
         // Check if team is qualified for round 2
-        if (round == 2) {
-            const result = await Result.findOne({ teamId: req.user._id, round: 1, qualified: true });
-            if (!result && req.user.role !== 'admin') {
-                return res.status(403).json({ message: 'Not qualified for Round 2' });
+        if (round === '2' || round === 2) {
+            const qualifiedByResult = await Result.findOne({ teamId: req.user._id, round: 1, qualified: true });
+
+            if (!qualifiedByResult && req.user.role !== 'admin') {
+                return res.status(403).json({ message: 'Not authorized or Round 2 not open' });
             }
         }
 
@@ -62,9 +64,9 @@ exports.submitRound1 = async (req, res) => {
 
             let marksAwarded = 0;
             if (ans.selectedAnswer === question.correctAnswer) {
-                marksAwarded = question.marks || 4;
-            } else if (ans.selectedAnswer) {
-                marksAwarded = question.negativeMarks || -1;
+                marksAwarded = question.marks !== undefined ? question.marks : 4;
+            } else if (ans.selectedAnswer && ans.selectedAnswer !== "") {
+                marksAwarded = question.negativeMarks !== undefined ? question.negativeMarks : -1;
             }
 
             totalScore += marksAwarded;
@@ -146,6 +148,82 @@ exports.submitRound2 = async (req, res) => {
     }
 };
 
+// Progressive Submit for Round 2 Question
+exports.submitRound2Question = async (req, res) => {
+    try {
+        const { questionId, answer } = req.body;
+        const teamId = req.user._id;
+
+        // Check qualification
+        const qualifiedByResult = await Result.findOne({ teamId, round: 1, qualified: true });
+        if (!qualifiedByResult && req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Not authorized or Round 2 not open' });
+        }
+
+        const question = await Question.findById(questionId);
+        if (!question) return res.status(404).json({ message: 'Question not found' });
+
+        // Check if already solved successfully
+        const alreadyCorrect = await Submission.findOne({ teamId, round: 2, questionId, marksAwarded: { $gt: 0 } });
+        if (alreadyCorrect) {
+            return res.status(400).json({ message: 'Already solved this question correctly' });
+        }
+
+        let marksAwarded = 0;
+        let isCorrect = false;
+
+        if (answer.trim().toLowerCase() === question.correctAnswer.trim().toLowerCase()) {
+            marksAwarded = question.marks !== undefined ? question.marks : 10;
+            isCorrect = true;
+        }
+
+        // Save submission attempt
+        await Submission.create({
+            teamId,
+            questionId,
+            selectedAnswer: answer,
+            marksAwarded,
+            round: 2
+        });
+
+        if (isCorrect) {
+            // Update Result for Round 2
+            let resultR2 = await Result.findOne({ teamId, round: 2 });
+            if (!resultR2) {
+                resultR2 = await Result.create({ teamId, round: 2, totalScore: marksAwarded });
+            } else {
+                resultR2.totalScore += marksAwarded;
+                await resultR2.save();
+            }
+        }
+
+        res.json({ isCorrect, marksAwarded });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// Get Round 2 Progress for Team
+exports.getRound2Progress = async (req, res) => {
+    try {
+        const teamId = req.user._id;
+
+        // Check if team is qualified for round 2
+        const qualifiedByResult = await Result.findOne({ teamId, round: 1, qualified: true });
+
+        if (!qualifiedByResult && req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Not authorized or Round 2 not open' });
+        }
+
+        const correctSubmissions = await Submission.find({ teamId, round: 2, marksAwarded: { $gt: 0 } }).select('questionId');
+        const solvedQuestionIds = correctSubmissions.map(s => s.questionId);
+
+        res.json({ solved: solvedQuestionIds });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 // Admin Select Teams for Round 2
 exports.qualifyTeams = async (req, res) => {
     try {
@@ -155,6 +233,19 @@ exports.qualifyTeams = async (req, res) => {
             { $set: { qualified: true } }
         );
         res.json({ message: 'Teams qualified successfully' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// Admin Start Round 2 for All
+exports.startRound2ForAll = async (req, res) => {
+    try {
+        const User = require('../models/User'); // lazy load to avoid any circular dependency, just in case
+
+        // Mark all teams globally authorized for round 2
+        await User.updateMany({ role: 'team' }, { $set: { isQualifiedForRound2: true } });
+        res.json({ message: 'Round 2 started for all teams' });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

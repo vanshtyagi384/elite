@@ -16,6 +16,7 @@ exports.login = async (req, res) => {
                 teamName: user.teamName,
                 username: user.username,
                 role: user.role,
+                isQualifiedForRound2: user.isQualifiedForRound2,
                 token: generateToken(user._id)
             });
         } else {

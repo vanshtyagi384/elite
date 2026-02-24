@@ -16,7 +16,7 @@ const Navbar = () => {
     return (
         <nav className="glass-card sticky top-0 z-50 px-6 py-4 flex justify-between items-center border-b border-white/10">
             <Link to="/" className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent">
-                EliteTest
+                Brawl Bits 3.0
             </Link>
 
             <div className="flex items-center gap-6">

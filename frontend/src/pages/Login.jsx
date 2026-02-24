@@ -38,7 +38,7 @@ const Login = () => {
                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-emerald-500" />
 
                 <h2 className="text-3xl font-bold text-center mb-8 bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
-                    EliteTest Access
+                    Brawl Bits 3.0 Access
                 </h2>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
@@ -81,8 +81,8 @@ const Login = () => {
                     </button>
                 </form>
 
-                <p className="mt-8 text-center text-slate-500 text-sm">
-                    Contact competition admin for assistance.
+                <p className="mt-8 text-center text-slate-500 text-sm font-medium">
+                    Futurista-Computer science department
                 </p>
             </motion.div>
         </div>
